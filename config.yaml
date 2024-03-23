@@ -1,0 +1,17 @@
+data_processing_constants:
+  vref: 3.300
+  acc_sensitivity: 300.0
+  gyro_sensitivity: 3.330
+  static_period: 5.000
+  adc_max: 1023
+training_parameters:
+  epochs: 100
+  learning_rate: 0.001
+  batch_size: 16
+other_configs:
+  path_to_train_datasets: "data/trainset"
+  path_to_test_datasets: "data/trainset"
+  path_to_model: "models/"
+  plot_figures_folder: "plot_images/"
+results:
+  folder: "results/"
