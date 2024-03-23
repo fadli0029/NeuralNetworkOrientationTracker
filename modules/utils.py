@@ -129,12 +129,6 @@ def add_noise(data, noise_level=0.01):
     augmented_data = data + noise
     return augmented_data
 
-def apply_random_rotation(data):
-    rotation = R.random().as_matrix()
-    rotated_data = np.dot(rotation, data[:, 3:].T).T  # Apply rotation to each timestep
-    rotated_data = rotated_data.reshape(-1, 3)
-    return np.hstack((data[:, :3], rotated_data))
-
 def scale_data(data, scale_range=(0.9, 1.1)):
     scale_factor = np.random.uniform(*scale_range)
     scaled_data = data * scale_factor
@@ -154,10 +148,9 @@ def jumble_axes(data):
 
 def augment_data(data, noise_level=0.01, time_stretch_factor=0.9, jitter_factor=0.02):
     augmented_data = add_noise(data, noise_level)
-    augmented_data = apply_random_rotation(augmented_data)
     augmented_data = scale_data(augmented_data)
     augmented_data = add_jitter(augmented_data, jitter_factor)
-    augmented_data = jumble_axes(augmented_data)
+    # augmented_data = jumble_axes(augmented_data)
     return augmented_data
 
 def euler(rot):

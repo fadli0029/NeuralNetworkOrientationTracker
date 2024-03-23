@@ -4,10 +4,6 @@
 # File: preprocessing.py
 # Description: This file contains functions to process the raw IMU data
 #              to get acceleration and angular velocity in physical units.
-# Misc: This is also part of one of the projects in the course
-#       "Sensing and Estimation in Robotics" taught by Prof. Nikolay
-#       Atanasov @UC San Diego.
-#       https://natanaso.github.io/ece276a/index.html
 # -------------------------------------------------------------------------
 
 import time

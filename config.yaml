@@ -7,10 +7,9 @@ data_processing_constants:
 training_parameters:
   epochs: 100
   learning_rate: 0.001
-  batch_size: 16
 other_configs:
   path_to_train_datasets: "data/trainset"
-  path_to_test_datasets: "data/trainset"
+  path_to_test_datasets: "data/testset"
   path_to_model: "models/"
   plot_figures_folder: "plot_images/"
 results:

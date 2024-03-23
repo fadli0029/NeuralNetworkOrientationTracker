@@ -98,7 +98,6 @@ def run_orientation_tracking(
     start = time.time()
     datas = []
     for dataset in datasets_to_train:
-        # Unpack the processed imu data
         a_ts = processed_imu_datasets[dataset]["accs"]
         w_ts = processed_imu_datasets[dataset]["gyro"]
         t_ts = processed_imu_datasets[dataset]["t_ts"]
@@ -112,12 +111,10 @@ def run_orientation_tracking(
 
         datas.append((data, ground_truth))
 
-        for _ in range(10):
+        for _ in range(5):
             augmented_data = augment_data(data)
             datas.append((augmented_data, ground_truth))
-        # -----------------------------------------------------------------------------
-        # tracker.train((data, ground_truth))
-        # -----------------------------------------------------------------------------
+
     tracker.train(datas)
 
     end = time.time()
@@ -127,47 +124,6 @@ def run_orientation_tracking(
     print(f"==========> ✅  Done! Total duration for {len(datas)} datasets: {minutes}m {seconds:.2f}s\n")
 
     tracker.save_model(path_to_model)
-
-# def run_orientation_tracking(
-#     tracker,
-#     datasets_to_train,
-#     processed_imu_datasets,
-#     ground_truth_datasets,
-#     path_to_model
-# ):
-#     start = time.time()
-#     datas = []
-#     for dataset in datasets_to_train:
-#         # Unpack the processed imu data
-#         a_ts = processed_imu_datasets[dataset]["accs"]
-#         w_ts = processed_imu_datasets[dataset]["gyro"]
-#         t_ts = processed_imu_datasets[dataset]["t_ts"]
-
-#         data = np.hstack((a_ts, w_ts))
-#         data_ts = t_ts
-
-#         ground_truth = ground_truth_datasets[dataset]['rots']
-#         ground_truth_ts = ground_truth_datasets[dataset]['ts']
-
-#         # They are not of the same shape because the ground truth frequency is higher.
-#         # So, synchronize it by finding the closest timestamp in the ground truth to the imu data.
-#         # This is done by finding the closest timestamp in the ground truth to each imu timestamp.
-#         indices = [find_nearest(ground_truth_ts, t) for t in data_ts]
-#         ground_truth = ground_truth[indices]
-
-#         datas.append((data, ground_truth))
-#         # -----------------------------------------------------------------------------
-#         # tracker.train((data, ground_truth))
-#         # -----------------------------------------------------------------------------
-#     tracker.train(datas)
-
-#     end = time.time()
-#     duration = end - start
-#     minutes = int(duration // 60)
-#     seconds = duration % 60
-#     print(f"==========> ✅  Done! Total duration for {len(datasets_to_train)} datasets: {minutes}m {seconds:.2f}s\n")
-
-#     tracker.save_model(path_to_model)
 
 def plot_all_results(
     datasets,

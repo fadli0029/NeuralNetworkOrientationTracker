@@ -21,8 +21,7 @@ def main():
 
     # If datasets not provided, set the default datasets
     train_datasets = [3, 4, 5]
-    # test_datasets = [1, 2, 8, 9]
-    test_datasets = [3, 4, 5]
+    test_datasets = [1, 2, 8, 9]
     if args.mode == "train":
         if args.datasets is None:
             datasets = train_datasets

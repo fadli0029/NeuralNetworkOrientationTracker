@@ -1,15 +1,51 @@
 import numpy as np
-
-from tqdm import tqdm
+from .quat_torch import *
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+class CustomLoss(nn.Module):
+    def __init__(self, base_loss_func=nn.MSELoss(), weight_base=0.5, weight_a=0.5):
+        """
+        Custom loss that includes a component to penalize deviation of a_z from 1.
+
+        Args:
+        - base_loss_func: The base loss function (e.g., MSE for quaternion prediction).
+        - weight_az: Weighting factor for the a_z deviation component of the loss.
+        """
+        super(CustomLoss, self).__init__()
+        self.base_loss_func = base_loss_func
+        self.weight_base = weight_base
+        self.weight_a = weight_a
+
+    def forward(self, outputs, targets, inputs, epoch):
+        """
+        Calculate the custom loss.
+
+        Args:
+        - outputs: The predicted outputs (e.g., quaternions).
+        - targets: The target outputs (e.g., ground truth quaternions).
+        - inputs: The input data, where inputs[:, 2] should be the a_z data.
+
+        Returns:
+        - The total loss as a PyTorch scalar.
+        """
+        quaternion_diff = 2*qlog_pytorch(qmult_pytorch(qinverse_pytorch(outputs), targets))
+        quaternion_diff = torch.norm(quaternion_diff, dim=1)
+        base_loss = self.weight_base * F.mse_loss(quaternion_diff, torch.zeros_like(quaternion_diff), reduction='mean')
+
+        g = torch.tensor([0., 0., 0., 1.], device=outputs.device, dtype=outputs.dtype).expand(outputs.size(0), 4)
+        q_inv_outputs = qinverse_pytorch(outputs)
+        a_outputs = qmult_pytorch(qmult_pytorch(q_inv_outputs, g), outputs)[:, 1:]
+        a_diff = self.weight_a * F.mse_loss(inputs[:, 0:3], a_outputs, reduction='mean')
+
+        total_loss = base_loss + a_diff
+        print(f'Epoch {epoch+1}, Base Loss: {base_loss.item():.3f}, A Diff: {a_diff.item():.3f}')
+
+        return total_loss
 
 class CustomDataset(Dataset):
     def __init__(self, inputs, targets):
@@ -36,25 +72,6 @@ class CustomDataset(Dataset):
 
         return input_sample, target_sample
 
-# class NeuralNet(nn.Module):
-#     def __init__(self, input_size, hidden_size, num_layers, output_size):
-#         super(NeuralNet, self).__init__()
-#         self.layers = nn.ModuleList()
-#         # Input layer
-#         self.layers.append(nn.Linear(input_size, hidden_size))
-#         # Hidden layers
-#         for _ in range(num_layers - 2):
-#             self.layers.append(nn.Linear(hidden_size, hidden_size))
-#         # Output layer
-#         self.layers.append(nn.Linear(hidden_size, output_size))
-
-#     def forward(self, x):
-#         for i, layer in enumerate(self.layers):
-#             x = layer(x)
-#             if i < len(self.layers) - 1:  # Apply activation function except for the output layer
-#                 x = F.relu(x)
-#         return x
-
 class NeuralNet(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, output_size, dropout_rate=0.5):
         super(NeuralNet, self).__init__()
@@ -69,20 +86,19 @@ class NeuralNet(nn.Module):
             if i < len(self.layers) - 1:  # Apply ReLU and dropout except for the output layer
                 x = F.relu(x)
                 x = self.dropout(x)
+        # normalize because quaternions have unit norm
+        x = F.normalize(x, p=2, dim=1)
         return x
 
 class DeepLearning:
     def __init__(self, training_parameters, input_size=6, hidden_size=256, num_layers=5, output_size=4):
         self.model = NeuralNet(input_size, hidden_size, num_layers, output_size)
-        # self.epochs = training_parameters['epochs']
-        self.epochs = 100
+        self.epochs = training_parameters['epochs']
         self.learning_rate = training_parameters['learning_rate']
-        self.batch_size = training_parameters['batch_size']
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate, weight_decay=1e-5)
-        # self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        self.criterion = nn.MSELoss()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+        self.criterion = CustomLoss(weight_a=0.7)
 
     def train(self, datasets):
         self.model.train()
@@ -95,10 +111,9 @@ class DeepLearning:
                     x, y = x.to(self.device), y.to(self.device)
                     self.optimizer.zero_grad()
                     outputs = self.model(x)
-                    loss = self.criterion(outputs, y)
+                    loss = self.criterion(outputs, y, x, epoch)
                     loss.backward()
                     self.optimizer.step()
-                print(f'Epoch {epoch+1}, Loss: {loss.item()}')
                 if loss.item() < 1e-3:
                     break
             print("")
