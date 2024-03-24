@@ -69,7 +69,7 @@ def main():
         path_to_model_folder = configs["other_configs"]["path_to_model"]
 
         tracker = DeepLearning(configs["training_parameters"])
-        tracker.load_model(path_to_model_folder + "lstm_model.pth")
+        tracker.load_model(path_to_model_folder + "model.pth")
 
         # run prediction on each dataset
         q_optims = run_testing(
