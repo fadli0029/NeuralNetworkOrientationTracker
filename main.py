@@ -20,8 +20,8 @@ def main():
     args = parser.parse_args()
 
     # If datasets not provided, set the default datasets
-    train_datasets = [3, 4, 5]
-    test_datasets = [1, 2, 8, 9]
+    train_datasets = [1, 2, 3, 4]
+    test_datasets = [5, 8, 9]
     if args.mode == "train":
         if args.datasets is None:
             datasets = train_datasets
